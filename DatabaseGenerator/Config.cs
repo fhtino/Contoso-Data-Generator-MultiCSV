@@ -14,6 +14,10 @@ namespace DatabaseGenerator
         public DateTime? CutDateAfter { get; set; }
         public double CustomerPercentage { get; set; }
         public int CustomerFakeGenerator { get; set; }   // >0 : use fake customers
+        
+        public int SplitCsvSizeMB { get; set; }
+        public int SplitCsvGZCompression { get; set; }
+
 
         public DaysWeight DaysWeight { get; set; }
 
@@ -22,14 +26,14 @@ namespace DatabaseGenerator
         public double[] DiscountWeights { get; set; }
         public double[] OnlinePerCent { get; set; }
         public double[] DeliveryDateLambdaWeights { get; set; }
-        public Dictionary<string,string> CountryCurrency { get; set; }
+        public Dictionary<string, string> CountryCurrency { get; set; }
 
 
         public List<AnnualSpike> AnnualSpikes { get; set; }
 
         public List<OneTimeSpike> OneTimeSpikes { get; set; }
 
-        public CustomerActivity CustomerActivity { get; set; }        
+        public CustomerActivity CustomerActivity { get; set; }
     }
 
 

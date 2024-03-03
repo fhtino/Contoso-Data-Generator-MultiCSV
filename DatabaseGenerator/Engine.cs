@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -165,12 +166,30 @@ namespace DatabaseGenerator
                     }
                 }
 
+                // Split CSV and GZ compression                             
+                if (_config.SplitCsvSizeMB > 0)
+                {
+                    Logger.Info($"CSV split");
+                    var ordersCsvFiles = SplitCsv(_ordersFileFP, _config.SplitCsvSizeMB * 1024L * 1024L, true);
+                    var ordersRowsCsvFiles = SplitCsv(_orderRowsFileFP, _config.SplitCsvSizeMB * 1024L * 1024L, true);
+                    Logger.Info($" - Orders files     : {ordersCsvFiles.Length}");
+                    Logger.Info($" - Order rows files : {ordersRowsCsvFiles.Length}");
+
+                    if (_config.SplitCsvGZCompression == 1)
+                    {
+                        Logger.Info($"CSV GZ compression");
+                        GZCompressFile(ordersCsvFiles, true);
+                        GZCompressFile(ordersRowsCsvFiles, true);
+                    }
+                }
+
                 Logger.Info($"Orders:            {logOrderCounter}");
                 Logger.Info($"Online orders:     {_CounterOnlineStore}");
                 Logger.Info($"OrdersRows:        {logOrderRowCounter}");
                 Logger.Info($"CannotAssignStore: {_CounterCannotAssignStore}");
                 Logger.Info($"Elapsed:           {DateTime.UtcNow.Subtract(startDT).TotalSeconds.ToString("0.000")}");
                 Logger.Info("THE END");
+
             }
             catch (Exception ex)
             {
@@ -180,6 +199,92 @@ namespace DatabaseGenerator
         }
 
 
+        /// <summary>
+        /// Split a CSV file into smaller CSV files
+        /// </summary>
+        private string[] SplitCsv(string sourceCsvFileName, long sizeThreshold, bool removeOriginal)
+        {
+            var outFileList = new List<string>();
+
+            using (var reader = new StreamReader(sourceCsvFileName))
+            {
+                string csvHeadersLine = reader.ReadLine();
+
+                int fileCounter = -1;
+                long size = 0;
+                StreamWriter writer = null;
+
+                while (!reader.EndOfStream)
+                {
+                    string csvLine = reader.ReadLine();
+
+                    if (csvLine != null)
+                    {
+                        if (writer == null)
+                        {
+                            fileCounter++;
+                            string smallCsvFileName = sourceCsvFileName.Replace(".csv", $".{fileCounter}.csv");
+                            writer = new StreamWriter(smallCsvFileName);
+                            writer.WriteLine(csvHeadersLine);
+                            size = 0;
+                            outFileList.Add(smallCsvFileName);
+                        }
+
+                        writer.WriteLine(csvLine);
+                        size += csvLine.Length + 2;
+
+                        if (size > sizeThreshold)
+                        {
+                            writer.Close();
+                            writer = null;
+                        }
+                    }
+                }
+
+                if (writer != null)
+                {
+                    writer.Close();
+                }
+            }
+
+            if (removeOriginal)
+            {
+                File.Delete(sourceCsvFileName);
+            }
+
+            return outFileList.ToArray();
+        }
+
+
+        /// <summary>
+        /// GZ compress a list of files
+        /// </summary>
+        private string[] GZCompressFile(string[] inFileList, bool removeOriginals)
+        {
+            var outFileList = new List<string>();
+
+            foreach (var inFileName in inFileList)
+            {
+                string gzFileName = inFileName + ".gz";
+                outFileList.Add(gzFileName);
+
+                using (var inStream = File.OpenRead(inFileName))
+                using (var outStream = File.OpenWrite(gzFileName))
+                {
+                    using (var gzip = new GZipStream(outStream, CompressionMode.Compress, false))
+                    {
+                        inStream.CopyTo(gzip);
+                    }
+                }
+
+                if (removeOriginals)
+                {
+                    File.Delete(inFileName);
+                }
+            }
+
+            return outFileList.ToArray();
+        }
 
 
 

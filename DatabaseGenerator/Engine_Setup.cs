@@ -35,6 +35,11 @@ namespace DatabaseGenerator
             if (File.Exists(_orderRowsFileFP))
                 File.Delete(_orderRowsFileFP);
 
+            if (_config.SplitCsvSizeMB > 0)
+            {
+                Directory.GetFiles(Path.GetDirectoryName(_ordersFileFP), "*.csv").ToList().ForEach(filename => File.Delete(filename));
+                Directory.GetFiles(Path.GetDirectoryName(_ordersFileFP), "*.csv.gz").ToList().ForEach(filename => File.Delete(filename));
+            }
         }
 
 
@@ -76,13 +81,13 @@ namespace DatabaseGenerator
             }
             else
             {
-                customers = ReadCustomersRptFile(Path.Combine(_inputFolder, "customers.rpt"));                
+                customers = ReadCustomersRptFile(Path.Combine(_inputFolder, "customers.rpt"));
                 // shuffle customers
                 var localRnd = new Random(0);
                 customers = customers.OrderBy(x => localRnd.Next()).ToList();
                 // get a percentage of customers
                 int topN = (int)(customers.Count * _config.CustomerPercentage);
-                customers = customers.Take(topN).ToList();               
+                customers = customers.Take(topN).ToList();
             }
         }
 

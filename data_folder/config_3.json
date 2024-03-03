@@ -6,6 +6,8 @@
   "CutDateAfter": "2020-09-03",
   "CustomerFakeGenerator": 0,
   "CustomerPercentage": 1.00,
+  "SplitCsvSizeMB": 2,
+  "SplitCsvGZCompression": 1,
 
   "DaysWeight": {
     "DaysWeightConstant": false,

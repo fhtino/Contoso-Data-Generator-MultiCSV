@@ -3,3 +3,4 @@ _temp
 *.tsv
 *.log
 *.csv
+*.gz
